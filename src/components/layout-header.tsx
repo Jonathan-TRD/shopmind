@@ -31,7 +31,7 @@ export async function SiteHeader() {
         </Link>
         <div className="flex flex-wrap items-center gap-3 md:gap-6">
           <Link
-            href="/"
+            href="/catalog"
             className="text-base font-medium tracking-wide text-shopify-white hover:text-muted"
           >
             Catalog
