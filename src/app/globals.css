@@ -1,26 +1,74 @@
 @import 'tailwindcss';
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --void: #000000;
+  --deep-teal: #02090a;
+  --dark-forest: #061a1c;
+  --forest: #102620;
+  --border-card: #1e2c31;
+  --accent: #36f4a4;
+  --muted: #a1a1aa;
+  --shade-50: #71717a;
+  --shade-70: #3f3f46;
+  --shopify-white: #ffffff;
+  --shopify-black: #000000;
+  --font-display: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-void: var(--void);
+  --color-deep-teal: var(--deep-teal);
+  --color-dark-forest: var(--dark-forest);
+  --color-forest: var(--forest);
+  --color-border-card: var(--border-card);
+  --color-accent: var(--accent);
+  --color-muted: var(--muted);
+  --color-shade-50: var(--shade-50);
+  --color-shade-70: var(--shade-70);
+  --color-shopify-white: var(--shopify-white);
+  --color-shopify-black: var(--shopify-black);
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+    'Courier New', monospace;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --shadow-card-rest:
+    rgba(0, 0, 0, 0.1) 0px 0px 0px 1px, rgba(0, 0, 0, 0.1) 0px 2px 2px,
+    rgba(0, 0, 0, 0.1) 0px 4px 4px, rgba(0, 0, 0, 0.1) 0px 8px 8px,
+    rgba(255, 255, 255, 0.03) 0px 1px 0px inset;
+
+  --shadow-card-high:
+    rgba(0, 0, 0, 0.1) 0px 0px 0px 1px, rgba(0, 0, 0, 0.12) 0px 2px 2px,
+    rgba(0, 0, 0, 0.12) 0px 4px 4px, rgba(0, 0, 0, 0.12) 0px 8px 8px,
+    rgba(0, 0, 0, 0.25) 0px 25px 50px -12px,
+    rgba(255, 255, 255, 0.04) 0px 1px 0px inset;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--void);
+  color: var(--shopify-white);
+  font-family: var(--font-sans);
+  font-feature-settings: 'ss03' 1;
+}
+
+.font-display {
+  font-family: var(--font-display);
+  font-feature-settings: 'ss03' 1;
+}
+
+.auth-card {
+  box-shadow: var(--shadow-card-high);
+}
+
+.shadow-dropdown {
+  box-shadow: var(--shadow-card-high);
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0px 1000px var(--dark-forest) inset;
+  -webkit-text-fill-color: var(--shopify-white);
+  caret-color: var(--shopify-white);
+  transition: background-color 5000s ease-in-out 0s;
 }
