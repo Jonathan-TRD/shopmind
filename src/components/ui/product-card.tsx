@@ -1,5 +1,8 @@
+'use client';
+
 import Image from 'next/image';
 
+import { useCart } from '@/lib/cart/cart-provider';
 import type { ProductDTO } from '@/lib/products/schemas';
 
 import { Badge } from './badge';
@@ -14,8 +17,17 @@ export type ProductCardProps = {
 };
 
 export function ProductCard({ product }: ProductCardProps) {
-  const { name, description, price, category, image_url, stock } = product;
+  const { id, name, description, price, category, image_url, stock, sku } =
+    product;
   const outOfStock = stock === 0;
+  const { addItem, isHydrated } = useCart();
+
+  function handleAddToCart() {
+    addItem(
+      { productId: id, sku, name, unitPrice: price, imageUrl: image_url },
+      stock
+    );
+  }
 
   return (
     <article className="group relative flex flex-col overflow-hidden rounded-xl border border-border-card bg-deep-teal shadow-(--shadow-card-rest) transition-all duration-300 ease-out hover:-translate-y-1 hover:border-shade-70 hover:shadow-(--shadow-card-high)">
@@ -104,7 +116,8 @@ export function ProductCard({ product }: ProductCardProps) {
 
           <button
             type="button"
-            disabled={outOfStock}
+            disabled={outOfStock || !isHydrated}
+            onClick={handleAddToCart}
             className="inline-flex h-8 items-center gap-1.5 rounded-full border border-shopify-white/20 bg-shopify-white/5 px-3 text-xs text-shopify-white transition-all duration-200 hover:border-shopify-white/60 hover:bg-shopify-white hover:text-shopify-black disabled:pointer-events-none disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-deep-teal"
           >
             <svg
