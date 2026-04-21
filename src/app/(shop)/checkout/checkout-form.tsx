@@ -4,10 +4,15 @@ import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 import { Button, FormAlert, FormField, Input } from '@/components/ui';
 import { useCart } from '@/lib/cart/cart-provider';
-import { checkoutShippingSchema } from '@/lib/checkout/schemas';
+import {
+  checkoutShippingSchema,
+  type CheckoutShipping,
+} from '@/lib/checkout/schemas';
 import { trpc } from '@/trpc/react';
 
 const priceFormatter = new Intl.NumberFormat('en-US', {
@@ -15,14 +20,19 @@ const priceFormatter = new Intl.NumberFormat('en-US', {
   currency: 'USD',
 });
 
-type FieldErrors = Partial<Record<'name' | 'email' | 'address', string>>;
-
 export function CheckoutForm() {
   const router = useRouter();
   const { lines, subtotal, itemCount, clearCart, isHydrated } = useCart();
 
-  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<CheckoutShipping>({
+    resolver: zodResolver(checkoutShippingSchema),
+  });
 
   const mutation = trpc.checkout.placeOrder.useMutation({
     onSuccess({ orderId }) {
@@ -30,37 +40,18 @@ export function CheckoutForm() {
       router.push(`/confirmation/${orderId}`);
     },
     onError(err) {
+      if (err.data?.code === 'UNAUTHORIZED') {
+        router.push(`/login?next=${encodeURIComponent('/checkout')}`);
+        return;
+      }
       setSubmitError(err.message ?? 'Something went wrong. Please try again.');
     },
   });
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setFieldErrors({});
+  function onSubmit(values: CheckoutShipping) {
     setSubmitError(null);
-
-    const fd = new FormData(e.currentTarget);
-    const raw = {
-      name: fd.get('name') as string,
-      email: fd.get('email') as string,
-      address: fd.get('address') as string,
-    };
-
-    const parsed = checkoutShippingSchema.safeParse(raw);
-    if (!parsed.success) {
-      const errs: FieldErrors = {};
-      for (const issue of parsed.error.issues) {
-        const field = issue.path[0] as keyof FieldErrors;
-        if (field) {
-          errs[field] = issue.message;
-        }
-      }
-      setFieldErrors(errs);
-      return;
-    }
-
     mutation.mutate({
-      ...parsed.data,
+      ...values,
       lines: lines.map((l) => ({
         productId: l.productId,
         quantity: l.quantity,
@@ -86,6 +77,8 @@ export function CheckoutForm() {
     );
   }
 
+  const isPending = isSubmitting || mutation.isPending;
+
   return (
     <div className="flex flex-col gap-12 lg:flex-row lg:items-start lg:gap-16">
       <div className="flex-1">
@@ -93,7 +86,7 @@ export function CheckoutForm() {
           Shipping details
         </h2>
         <form
-          onSubmit={handleSubmit}
+          onSubmit={handleSubmit(onSubmit)}
           noValidate
           className="flex flex-col gap-6"
         >
@@ -104,68 +97,68 @@ export function CheckoutForm() {
           <FormField
             label="Full name"
             htmlFor="checkout-name"
-            error={fieldErrors.name}
+            error={errors.name?.message}
           >
             <Input
               id="checkout-name"
-              name="name"
               type="text"
               autoComplete="name"
               placeholder="Jane Doe"
-              aria-invalid={!!fieldErrors.name}
-              aria-describedby={
-                fieldErrors.name ? 'checkout-name-error' : undefined
-              }
+              aria-invalid={!!errors.name}
+              aria-describedby={errors.name ? 'checkout-name-error' : undefined}
+              {...register('name')}
             />
           </FormField>
 
           <FormField
             label="Email address"
             htmlFor="checkout-email"
-            error={fieldErrors.email}
+            error={errors.email?.message}
           >
             <Input
               id="checkout-email"
-              name="email"
               type="email"
               autoComplete="email"
               placeholder="jane@example.com"
-              aria-invalid={!!fieldErrors.email}
+              aria-invalid={!!errors.email}
               aria-describedby={
-                fieldErrors.email ? 'checkout-email-error' : undefined
+                errors.email ? 'checkout-email-error' : undefined
               }
+              {...register('email')}
             />
           </FormField>
 
           <FormField
             label="Shipping address"
             htmlFor="checkout-address"
-            error={fieldErrors.address}
+            error={errors.address?.message}
           >
             <textarea
               id="checkout-address"
-              name="address"
               rows={3}
               autoComplete="street-address"
               placeholder="123 Main St, City, Country"
-              aria-invalid={!!fieldErrors.address}
+              aria-invalid={!!errors.address}
               aria-describedby={
-                fieldErrors.address ? 'checkout-address-error' : undefined
+                errors.address ? 'checkout-address-error' : undefined
               }
               className="w-full resize-none rounded-lg border border-shade-70 bg-dark-forest px-4 py-3 text-base text-shopify-white placeholder-shade-50 transition-all duration-200 focus-visible:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/25"
+              {...register('address')}
             />
           </FormField>
 
           <Button
             type="submit"
             variant="primary"
-            pending={mutation.isPending}
-            disabled={mutation.isPending}
+            pending={isPending}
+            disabled={isPending}
           >
             Place order
           </Button>
         </form>
       </div>
+
+      {/* Order summary */}
       <div className="w-full rounded-xl border border-border-card bg-dark-forest p-6 lg:w-80 lg:shrink-0">
         <h2 className="mb-4 font-display text-lg font-light tracking-tight text-shopify-white">
           Order summary

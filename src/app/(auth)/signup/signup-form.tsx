@@ -1,22 +1,64 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
-import { useActionState } from 'react';
+import { isRedirectError } from 'next/dist/client/components/redirect-error';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 import { AuthCard, Button, FormAlert, FormField, Input } from '@/components/ui';
-import { signUp, type AuthFormState } from '@/lib/auth/actions';
+import { signUp } from '@/lib/auth/actions';
+import { signUpSchema, type SignUpInput } from '@/lib/auth/schemas';
 
 type SignupFormProps = {
   nextPath: string;
 };
 
 export function SignupForm({ nextPath }: SignupFormProps) {
-  const [state, formAction, pending] = useActionState<AuthFormState, FormData>(
-    signUp,
-    null
-  );
+  const [serverError, setServerError] = useState<string | null>(null);
+  const [emailConfirmation, setEmailConfirmation] = useState(false);
 
-  if (state?.success === 'email_confirmation') {
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<SignUpInput>({
+    resolver: zodResolver(signUpSchema),
+  });
+
+  async function onSubmit(values: SignUpInput) {
+    setServerError(null);
+
+    const fd = new FormData();
+    fd.append('email', values.email);
+    fd.append('password', values.password);
+    fd.append('confirmPassword', values.confirmPassword);
+    fd.append('next', nextPath);
+
+    try {
+      const result = await signUp(null, fd);
+      if (result?.success === 'email_confirmation') {
+        setEmailConfirmation(true);
+        return;
+      }
+      if (result?.fieldErrors) {
+        for (const [field, message] of Object.entries(result.fieldErrors)) {
+          setError(field as keyof SignUpInput, { message });
+        }
+      }
+      if (result?.error) {
+        setServerError(result.error);
+      }
+    } catch (e) {
+      if (isRedirectError(e)) {
+        throw e;
+      }
+      setServerError('Something went wrong. Please try again.');
+    }
+  }
+
+  if (emailConfirmation) {
     return (
       <AuthCard title="Check your email">
         <p className="text-base leading-relaxed text-muted">
@@ -48,66 +90,56 @@ export function SignupForm({ nextPath }: SignupFormProps) {
         </p>
       }
     >
-      {state?.error ? (
-        <FormAlert politeness="assertive">{state.error}</FormAlert>
+      {serverError ? (
+        <FormAlert politeness="assertive">{serverError}</FormAlert>
       ) : null}
-      <form action={formAction} className="flex flex-col gap-6">
-        <input type="hidden" name="next" value={nextPath} />
-        <FormField
-          label="Email"
-          htmlFor="email"
-          error={state?.fieldErrors?.email}
-        >
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        noValidate
+        className="flex flex-col gap-6"
+      >
+        <FormField label="Email" htmlFor="email" error={errors.email?.message}>
           <Input
             id="email"
-            name="email"
             type="email"
             autoComplete="email"
-            required
-            aria-invalid={!!state?.fieldErrors?.email}
-            aria-describedby={
-              state?.fieldErrors?.email ? 'email-error' : undefined
-            }
+            aria-invalid={!!errors.email}
+            aria-describedby={errors.email ? 'email-error' : undefined}
+            {...register('email')}
           />
         </FormField>
         <FormField
           label="Password"
           htmlFor="password"
-          error={state?.fieldErrors?.password}
+          error={errors.password?.message}
           hint="At least 6 characters (match your Supabase project policy)."
         >
           <Input
             id="password"
-            name="password"
             type="password"
             autoComplete="new-password"
-            required
-            aria-invalid={!!state?.fieldErrors?.password}
-            aria-describedby={
-              state?.fieldErrors?.password ? 'password-error' : undefined
-            }
+            aria-invalid={!!errors.password}
+            aria-describedby={errors.password ? 'password-error' : undefined}
+            {...register('password')}
           />
         </FormField>
         <FormField
           label="Confirm password"
           htmlFor="confirmPassword"
-          error={state?.fieldErrors?.confirmPassword}
+          error={errors.confirmPassword?.message}
         >
           <Input
             id="confirmPassword"
-            name="confirmPassword"
             type="password"
             autoComplete="new-password"
-            required
-            aria-invalid={!!state?.fieldErrors?.confirmPassword}
+            aria-invalid={!!errors.confirmPassword}
             aria-describedby={
-              state?.fieldErrors?.confirmPassword
-                ? 'confirmPassword-error'
-                : undefined
+              errors.confirmPassword ? 'confirmPassword-error' : undefined
             }
+            {...register('confirmPassword')}
           />
         </FormField>
-        <Button type="submit" variant="primary" pending={pending}>
+        <Button type="submit" variant="primary" pending={isSubmitting}>
           Sign up
         </Button>
       </form>
