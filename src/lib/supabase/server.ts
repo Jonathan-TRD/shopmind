@@ -20,7 +20,7 @@ export async function createClient() {
           );
         } catch {
           // Called from a Server Component where cookies are read-only;
-          // session refresh should run in Middleware or a Route Handler.
+          // session refresh should run in Proxy or a Route Handler.
         }
       },
     },
