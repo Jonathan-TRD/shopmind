@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { createClient } from '@/lib/supabase/server';
+import { CartHeaderControls } from './cart-header-controls';
 import { UserMenu } from './user-menu';
 
 function getInitials(email: string): string {
@@ -36,12 +37,7 @@ export async function SiteHeader() {
           >
             Catalog
           </Link>
-          <Link
-            href="/cart"
-            className="text-base font-medium tracking-wide text-shopify-white hover:text-muted"
-          >
-            Cart
-          </Link>
+          <CartHeaderControls />
           {user ? (
             <>
               <Link

@@ -2,6 +2,7 @@ export { AuthCard } from './auth-card';
 export { Badge } from './badge';
 export { Button } from './button';
 export { Card } from './card';
+export { Drawer } from './drawer';
 export { FormAlert } from './form-alert';
 export { FormField } from './form-field';
 export { Input } from './input';
